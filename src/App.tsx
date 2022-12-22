@@ -1,29 +1,76 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import './App.css';
+import { createContext, useEffect, useState } from 'react';
+
+import Container from '@mui/material/Container';
+
+import { getComments } from './api/endpoints';
+import { Header, TaskControls, TodoTable } from './components';
+
+const data = [
+  {
+    [new Date().getDate()]: [
+      { title: 'f', subtitle: 'fff' },
+      { title: 'f', subtitle: 'fff' },
+    ],
+  },
+  {
+    [new Date().getDate() + 1]: [
+      { title: 'f12', subtitle: 'fff' },
+      { title: 'f', subtitle: 'fff' },
+    ],
+  },
+];
+
+export const DataContext = createContext({
+  hideMarquee: false,
+  setHideMarquee: () => {},
+  hideToday: false,
+  toggleHideToday: () => {},
+});
 
 function App() {
-  const [count, setCount] = useState(0);
+  const isToday = (day: number) => new Date().getDate() === day;
+  const [comments, setComments] = useState('');
+  const [hideToday, setHideToday] = useState(false);
+  const [hideMarquee, setHideMarquee] = useState(false);
+
+  useEffect(() => {
+    getComments.then((res) => setComments(res.data[0].body));
+  }, []);
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <DataContext.Provider
+      value={{
+        hideMarquee,
+        setHideMarquee: () => setHideMarquee((prev) => !prev),
+        hideToday,
+        toggleHideToday: () => setHideToday((prev) => !prev),
+      }}>
+      <div className="App">
+        <Container sx={{ width: '100vw', display: 'flex', justifyContent: 'center' }}>
+          <div
+            style={{
+              background: '#222222',
+              height: '80vh',
+              width: '40vw',
+              borderRadius: '20px',
+              padding: '10px 10px',
+            }}>
+            <Header>To Do</Header>
+            <TaskControls />
+            {data.map((todosData) => {
+              const [[day, data]] = Object.entries(todosData);
+              if (hideToday && isToday(+day)) return;
+              return <TodoTable key={day} todos={data} />;
+            })}
+            {hideMarquee && (
+              <marquee direction="right" scrollamount="10">
+                {comments ? comments : 'Loading'}
+              </marquee>
+            )}
+          </div>
+        </Container>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </div>
+    </DataContext.Provider>
   );
 }
 
